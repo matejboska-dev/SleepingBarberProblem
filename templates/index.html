@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleeping Barber Problem</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Simulace problému Sleeping Barber</h1>
+
+        <!-- Konfigurační formulář -->
+        <div class="config">
+            <h2>Konfigurace</h2>
+            <form id="config-form">
+                <label for="num_chairs">Počet židlí:</label>
+                <input type="number" id="num_chairs" name="num_chairs" value="{{ num_chairs }}" min="1" required>
+                <label for="max_customers">Maximální počet zákazníků:</label>
+                <input type="number" id="max_customers" name="max_customers" value="{{ max_customers }}" min="1" required>
+                <button type="submit">Uložit nastavení</button>
+            </form>
+        </div>
+
+        <!-- Zobrazení čekajících zákazníků -->
+        <div class="waiting-customers">
+            <h2>Čekající zákazníci:</h2>
+            <ul id="customers-list">
+                {% for customer in waiting_customers %}
+                    <li>Zákazník {{ customer }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Tlačítko pro přidání zákazníka -->
+        <button id="add-customer-btn">Přidat zákazníka</button>
+
+        <!-- Zprávy o stavu -->
+        <div id="message"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
