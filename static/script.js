@@ -1,66 +1,69 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const addCustomerBtn = document.getElementById("add-customer-btn");
-    const configForm = document.getElementById("config-form");
-    const messageDiv = document.getElementById("message");
-    const customersList = document.getElementById("customers-list");
+let timerInterval;
 
-    addCustomerBtn.addEventListener("click", function() {
-        fetch('/add_customer', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                num_chairs: document.getElementById('num_chairs').value,
-                max_customers: document.getElementById('max_customers').value
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                updateCustomerList();
-            } else {
-                showMessage(data.message);
-            }
-        });
-    });
+function fetchStatus() {
+    fetch("/api/status")
+        .then((response) => response.json())
+        .then((data) => {
+            // Update barber status
+            const barberStatus = document.getElementById("barber-status");
+            const barberImg = document.getElementById("barber-img");
+            barberStatus.textContent = `Status: ${data.barber_status}`;
+            barberImg.src =
+                data.barber_status === "Sleeping"
+                    ? "img\barber inactive.png"
+                    : "img\barber active.png";
 
-    configForm.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const numChairs = document.getElementById('num_chairs').value;
-        const maxCustomers = document.getElementById('max_customers').value;
+            // Update waiting room
+            const seats = document.querySelectorAll(".seat");
+            seats.forEach((seat, index) => {
+                seat.src =
+                    index < data.waiting_customers.length
+                        ? "img\waitingroom-occupiedchair.png"
+                        : "img\waitingroom-emptychair.png";
+            });
 
-        fetch('/save_config', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ num_chairs: numChairs, max_customers: maxCustomers })
-        })
-        .then(response => response.json())
-        .then(data => {
-            showMessage(data.message);
-        });
-    });
-
-    function updateCustomerList() {
-        fetch('/get_customers')
-        .then(response => response.json())
-        .then(data => {
-            customersList.innerHTML = '';
-            data.customers.forEach(customer => {
-                const li = document.createElement('li');
-                li.textContent = `Zákazník ${customer}`;
-                customersList.appendChild(li);
+            // Update incoming customers
+            const entrance = document.getElementById("incoming-customers");
+            entrance.innerHTML = ""; // Clear previous
+            data.waiting_customers.forEach((customer) => {
+                const img = document.createElement("img");
+                img.src = "static\img\waiting stickman.png";
+                img.alt = customer.name;
+                img.title = customer.name;
+                img.style.width = "50px";
+                entrance.appendChild(img);
             });
         });
-    }
+}
 
-    function showMessage(message) {
-        messageDiv.textContent = message;
-        messageDiv.style.display = 'block';
-        setTimeout(() => {
-            messageDiv.style.display = 'none';
-        }, 3000);
-    }
-});
+function fetchTimeRemaining() {
+    fetch("/api/time_remaining")
+        .then((response) => response.json())
+        .then((data) => {
+            const timerElement = document.getElementById("timer");
+            if (data.time_remaining > 0) {
+                timerElement.textContent = `Time Remaining: ${data.time_remaining}s`;
+                clearInterval(timerInterval);
+                startTimer(data.time_remaining);
+            } else {
+                timerElement.textContent = "";
+            }
+        });
+}
+
+function startTimer(seconds) {
+    let timeLeft = seconds;
+    timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+            timeLeft--;
+            document.getElementById("timer").textContent = `Time Remaining: ${timeLeft}s`;
+        } else {
+            clearInterval(timerInterval);
+        }
+    }, 1000);
+}
+
+setInterval(() => {
+    fetchStatus();
+    fetchTimeRemaining();
+}, 1000);

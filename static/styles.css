@@ -1,81 +1,58 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background-color: #f8f9fa;
     color: #333;
-}
-
-.container {
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
     text-align: center;
-    margin-bottom: 20px;
+    margin: 0;
+    padding: 0;
 }
 
-h2 {
+#app {
+    padding: 20px;
+}
+
+.rooms {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.room {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #fff;
+    width: 30%;
+    border-radius: 5px;
+}
+
+.room h2 {
     margin-bottom: 10px;
 }
 
-.config {
-    margin-bottom: 20px;
+.seats {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
+.seat {
+    width: 50px;
+    height: auto;
 }
 
-input[type="number"] {
-    padding: 8px;
-    margin-bottom: 15px;
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+#barber-img {
+    width: 100px;
+    height: auto;
+    margin-bottom: 10px;
 }
 
-button {
-    padding: 10px 15px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+#incoming-customers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-button:hover {
-    background-color: #45a049;
-}
-
-.waiting-customers ul {
-    list-style-type: none;
-}
-
-.waiting-customers li {
-    background-color: #f9f9f9;
-    margin: 5px 0;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-#message {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #ffcccb;
-    border-radius: 5px;
-    color: #ff0000;
-    text-align: center;
-    display: none;
+#timer {
+    font-size: 18px;
+    color: #555;
 }
