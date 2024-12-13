@@ -1,130 +1,97 @@
-from flask import Flask, render_template, jsonify
 from threading import Thread, Lock, Event
 import time
 import random
 
-app = Flask(__name__)
-
-# Mutex for thread synchronization
 mutex = Lock()
 
-# Configuration
-customer_interval_min = 5
-customer_interval_max = 15
-haircut_duration_min = 3
-haircut_duration_max = 15
+# Interval in seconds
+customerIntervalMin = 5
+customerIntervalMax = 15
+haircutDurationMin = 3
+haircutDurationMax = 15
 
-# Global variables for barber and waiting room status
-barber_status = "Sleeping"
-waiting_customers = []
-current_customer = None
-time_remaining = 0
-barber_working_event = Event()
+class BarberShop:
+    def __init__(self, barber, numberOfSeats):
+        self.barber = barber
+        self.numberOfSeats = numberOfSeats
+        self.waitingCustomers = []
+        print('BarberShop initialized with {0} seats'.format(numberOfSeats))
+        print('Customer min interval {0}'.format(customerIntervalMin))
+        print('Customer max interval {0}'.format(customerIntervalMax))
+        print('Haircut min duration {0}'.format(haircutDurationMin))
+        print('Haircut max duration {0}'.format(haircutDurationMax))
+        print('---------------------------------------')
+
+    def openShop(self):
+        print('Barber shop is opening')
+        workingThread = Thread(target=self.barberGoToWork)
+        workingThread.start()
+
+    def barberGoToWork(self):
+        while True:
+            mutex.acquire()
+
+            if len(self.waitingCustomers) > 0:
+                c = self.waitingCustomers[0]
+                del self.waitingCustomers[0]
+                mutex.release()
+                self.barber.cutHair(c)
+            else:
+                mutex.release()
+                print('Aaah, all done, going to sleep')
+                self.barber.sleep()
+                print('Barber woke up')
+
+    def enterBarberShop(self, customer):
+        mutex.acquire()
+        print('>> {0} entered the shop and is looking for a seat'.format(customer.name))
+
+        if len(self.waitingCustomers) == self.numberOfSeats:
+            print('Waiting room is full, {0} is leaving.'.format(customer.name))
+            mutex.release()
+        else:
+            print('{0} sat down in the waiting room'.format(customer.name))
+            self.waitingCustomers.append(customer)
+            mutex.release()
+            self.barber.wakeUp()
 
 class Customer:
     def __init__(self, name):
         self.name = name
 
-
 class Barber:
+    barberWorkingEvent = Event()
+
     def sleep(self):
-        global barber_status
-        barber_status = "Sleeping"
-        barber_working_event.wait()
+        self.barberWorkingEvent.clear()
+        self.barberWorkingEvent.wait()
 
-    def wake_up(self):
-        global barber_status
-        barber_status = "Awake"
-        barber_working_event.set()
+    def wakeUp(self):
+        self.barberWorkingEvent.set()
 
-    def cut_hair(self, customer):
-        global barber_status, time_remaining, current_customer
-        barber_status = f"Cutting hair: {customer.name}"
-        time_remaining = random.randint(haircut_duration_min, haircut_duration_max)
-        current_customer = customer.name
+    def cutHair(self, customer):
+        print('{0} is having a haircut'.format(customer.name))
 
-        while time_remaining > 0:
-            time.sleep(1)
-            time_remaining -= 1
+        randomHairCuttingTime = random.randrange(haircutDurationMin, haircutDurationMax + 1)
+        time.sleep(randomHairCuttingTime)
+        print('{0} is done'.format(customer.name))
+        self.barberWorkingEvent.set()
 
-        barber_status = f"Finished haircut: {customer.name}"
-        time.sleep(1)  # Simulate short pause after haircut
-        barber_status = "Sleeping"
-        current_customer = None
+if __name__ == '__main__':
+    customers = []
+    customers.append(Customer('Bragi'))
+    customers.append(Customer('Auja'))
+    customers.append(Customer('Iris'))
+  
 
-
-class BarberShop:
-    def __init__(self, barber, num_seats):
-        self.barber = barber
-        self.num_seats = num_seats
-        print(f"BarberShop initialized with {num_seats} seats.")
-
-    def barber_go_to_work(self):
-        while True:
-            mutex.acquire()
-            if waiting_customers:
-                customer = waiting_customers.pop(0)
-                mutex.release()
-                self.barber.cut_hair(customer)
-            else:
-                mutex.release()
-                self.barber.sleep()
-
-    def enter_shop(self, customer):
-        global barber_status
-        mutex.acquire()
-        if len(waiting_customers) >= self.num_seats:
-            print(f"Waiting room full. {customer.name} is leaving.")
-            mutex.release()
-        else:
-            print(f"{customer.name} sat in the waiting room.")
-            waiting_customers.append(customer)
-            mutex.release()
-            self.barber.wake_up()
-
-
-# Flask routes
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/api/status")
-def status():
-    return jsonify({
-        "barber_status": barber_status,
-        "waiting_customers": [{"name": c.name} for c in waiting_customers],
-    })
-
-
-@app.route("/api/time_remaining")
-def timer():
-    return jsonify({"time_remaining": time_remaining})
-
-
-def generate_customers(barber_shop):
-    customers = [
-        "Bragi", "Auja", "Iris"
-    ]
-
-    while customers:
-        customer_name = customers.pop(0)
-        customer = Customer(customer_name)
-        barber_shop.enter_shop(customer)
-        time.sleep(random.randint(customer_interval_min, customer_interval_max))
-
-
-if __name__ == "__main__":
     barber = Barber()
-    barber_shop = BarberShop(barber, num_seats=3)
 
-    # Start barber thread
-    barber_thread = Thread(target=barber_shop.barber_go_to_work, daemon=True)
-    barber_thread.start()
+    barberShop = BarberShop(barber, numberOfSeats=3)
+    barberShop.openShop()
 
-    # Start customer generation thread
-    customer_thread = Thread(target=generate_customers, args=(barber_shop,), daemon=True)
-    customer_thread.start()
-
-    # Start Flask server
-    app.run(debug=True, port=5000)
+    while len(customers) > 0:
+        c = customers.pop()
+        # New customer enters the barbershop
+        barberShop.enterBarberShop(c)
+        customerInterval = random.randrange(customerIntervalMin, customerIntervalMax + 1)
+        time.sleep(customerInterval)
