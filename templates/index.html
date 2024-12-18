@@ -3,40 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barber Shop Simulation</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <title>Sleeping Barber Simulation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div id="app">
-        <h1>Barber Shop Simulation</h1>
+    <h1>Sleeping Barber Simulation</h1>
 
-        <div class="rooms">
-            <!-- Barber Room -->
-            <div class="room" id="barber-room">
-                <h2>Barber Room</h2>
-                <img id="barber-img" src="static\img\barber inactive.png" alt="Barber">
-                <p id="barber-status">Status: Sleeping</p>
-                <div id="timer"></div>
-            </div>
+    <div class="barber-section">
+        <h2>Barber Status</h2>
+        <img id="barber-img" src="{{ url_for('static', filename='static\img\barber inactive.png') }}" alt="Barber">
+        <p id="barber-status">Barber is sleeping</p>
+    </div>
 
-            <!-- Waiting Room -->
-            <div class="room" id="waiting-room">
-                <h2>Waiting Room</h2>
-                <div class="seats">
-                    <img class="seat" id="seat-1" src="static\img\waitingroom-emptychair.png" alt="Empty Chair">
-                    <img class="seat" id="seat-2" src="static\img\waitingroom-emptychair.png" alt="Empty Chair">
-                    <img class="seat" id="seat-3" src="static\img\waitingroom-emptychair.png" alt="Empty Chair">
-                </div>
-            </div>
-
-            <!-- Entrance -->
-            <div class="room" id="entrance">
-                <h2>Entrance</h2>
-                <div id="incoming-customers"></div>
-            </div>
+    <div class="waiting-room">
+        <h2>Waiting Room</h2>
+        <div id="chairs" class="chairs-container">
+            <!-- Waiting room chairs will be dynamically updated -->
         </div>
     </div>
 
-    <script src="/static/script.js"></script>
+    <div id="logs">
+        <h2>Logs</h2>
+        <ul id="log-list"></ul>
+    </div>
+
+    <div class="controls">
+        <a href="{{ url_for('reset') }}"><button class="reset-button">Reset Simulation</button></a>
+    </div>
+
+    <script>
+        // Function to fetch and update the simulation status
+        function fetchStatus() {
+            fetch("/status")
+                .then(response => response.json())
+                .then(data => {
+                    // Update barber status
+                    document.getElementById("barber-status").textContent = "Barber is " + data.barber_status.toLowerCase();
+
+                    let barberImg = document.getElementById("barber-img");
+                    if (data.barber_status === "Sleeping") {
+                        barberImg.src = "{{ url_for('static', filename='static\img\barber inactive.png') }}";
+                    } else {
+                        barberImg.src = "{{ url_for('static', filename='static\img\barber active.png') }}";
+                    }
+
+                    // Update logs
+                    let logList = document.getElementById("log-list");
+                    logList.innerHTML = "";
+                    data.customer_log.forEach(log => {
+                        let li = document.createElement("li");
+                        li.textContent = log;
+                        logList.appendChild(li);
+                    });
+
+                    // Update waiting room chairs dynamically
+                    let chairsContainer = document.getElementById("chairs");
+                    chairsContainer.innerHTML = "";
+
+                    // Assuming waiting customers count is derived from the log entries
+                    let waitingCount = data.customer_log.filter(log => log.includes("is waiting")).length;
+
+                    for (let i = 0; i < {{ waiting_room_capacity }}; i++) {
+                        let chairImg = document.createElement("img");
+                        if (i < waitingCount) {
+                            chairImg.src = "{{ url_for('static', filename='static\img\waitingroom-occupiedchair.png') }}";
+                            chairImg.alt = "Occupied Chair";
+                        } else {
+                            chairImg.src = "{{ url_for('static', filename='static\img\waitingroom-emptychair.png') }}";
+                            chairImg.alt = "Empty Chair";
+                        }
+                        chairImg.className = "chair";
+                        chairsContainer.appendChild(chairImg);
+                    }
+                });
+        }
+
+        // Fetch status every second to keep the UI updated
+        setInterval(fetchStatus, 1000);
+    </script>
 </body>
 </html>
